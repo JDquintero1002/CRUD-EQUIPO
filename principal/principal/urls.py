@@ -1,40 +1,31 @@
 from django.contrib import admin
-from django.urls import path
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
 from django.urls import path, include
 from django.contrib.auth.models import User
-from rest_framework import routers, serializers, viewsets
-from equipos.api.router import router_equipo
+from rest_framework import permissions, routers, serializers, viewsets
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from equipos.api.router import router_equipo
 
-# Serializers define the API representation.
+# ==========================================
+# 1. SERIALIZERS Y VIEWSETS (Configuración de Usuarios)
+# ==========================================
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
         fields = ["url", "username", "email", "is_staff"]
 
-
-# ViewSets define the view behavior.
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-
+# Registro del Router de Usuarios
 router = routers.DefaultRouter()
 router.register(r"users", UserViewSet)
 
 
-urlpatterns = [
-    path("", include(router.urls)),
-    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
-    path('api/',     include(router_equipo.urls)),
-    path('api/',     include(router_equipo.urls)),
-]
-
+# ==========================================
+# 2. DEFINICIÓN DE SCHEMA_VIEW (Antes de urlpatterns)
+# ==========================================
 schema_view = get_schema_view(
    openapi.Info(
       title="Snippets API",
@@ -49,3 +40,20 @@ schema_view = get_schema_view(
 )
 
 
+# ==========================================
+# 3. PATRONES DE URL (Mapeo de Rutas)
+# ==========================================
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    
+    # Rutas de Documentación Swagger y Redoc
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    
+    # Autenticación de la API
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    
+    # Endpoints de los Routers
+    path("", include(router.urls)),           # Rutas para usuarios en la raíz (/)
+    path('api/', include(router_equipo.urls)), # Rutas para equipos bajo (/api/equipos/)
+]
